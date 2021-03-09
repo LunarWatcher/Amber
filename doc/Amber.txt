@@ -1,0 +1,33 @@
+*amber* *amber.vim* *amber.txt*
+
+License: MIT
+URL: https://github.com/LunarWatcher/Amber
+
+Changelog:
+
+================================================================================
+Table of contents~
+
+    1. Introduction .................................. |amber-introduction|
+    2. Usage ......................................... |amber-usage|
+
+================================================================================
+1. Introduction                                               *amber-introduction*
+
+The primary motivation behind this plugin is making it substantially easier to
+prototype and generate colorschemes, without leaving Vim.
+
+The main functionality in Amber is the preview feature - plug in your color
+values, and see what it looks like. As a side-effect, Amber also generates a
+.vim file that you can use and distribute as a colorscheme - even if you decide
+to uninstall Amber later.
+
+Amber also lets you work in Lua. This is largely because Lua is faster than
+Python, and both of which are faster 
+
+================================================================================
+2. Usage                                                             *amber-usage*
+
+
+
+vim:ft=help:tw=80
