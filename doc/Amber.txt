@@ -10,6 +10,7 @@ Table of contents~
 
     1. Introduction .................................. |amber-introduction|
     2. Usage ......................................... |amber-usage|
+    3. Syntax ........................................ |amber-syntax|
 
 ================================================================================
 1. Introduction                                               *amber-introduction*
@@ -25,9 +26,72 @@ to uninstall Amber later.
 Amber also lets you work in Lua. This is largely because Lua is faster than
 Python, and both of which are faster 
 
+Caveats~
+
+* There's currently no way to "undo" what Amber has done. Restart Vim to restore
+  its former glory.
+
+
+--------------------------------------------------------------------------------
+                                                                 *amber-technical*
+
+This bit of the document makes no practical difference for the average user of
+Amber, but still exists for the people more interested in the internals of
+Amber. Jump to |amber-usage| if you don't care, or just don't wanna read this
+bit right now.
+
+Amber is largely just a parser and command executor. There's autocmds on
+CursorHold for checking for somewhat natural points to update amber.
+There's lots of different autocmds that could've been applied, but I chose
+CursorHold (and CursorHoldI) because it makes more sense to update when the
+cursor is held rather than when it's been moved.
+
+This is largely a performance decision - we want real-time updates, but not so
+real-time it affects performance.
+
+
 ================================================================================
 2. Usage                                                             *amber-usage*
 
+================================================================================
+3. Syntax                                                           *amber-syntax*
 
+As mentioned in the README, Amber has a custom, but tiny markup language. Its
+syntax is meant to be simple.
+
+ 1. A line is a statement. For implementation reasons, there are no multiline
+    statements -- I get enough of that from working on autopairs
+ 2. A line is either a variable or a (highlight) statement. Declaration order
+    may be of significance 
+    (multiple lines changing may cause some lines to be processed
+    before variables are initialized or updated)
+ 3. A variable line is `var VariableName = "Your string content here"`
+    For various implementation reasons (read: because of the use of these
+    variables), there aren't other variable types because they shouldn't be
+    needed. The way highlights and stuff are interpreted should make them
+    redundant. Also, note that due to the way strings in vim and how Amber's
+    substitution is set up, you always get the raw content of the variable. Use
+    this wisely when interpolating.
+ 4. A statement contains a highlight group name and brackets containing
+    additional data. I.e. `HighlightGroup { guifg=#abcdef guigb=#fedcba }`
+
+    These are mostly compatible with the highlight command,
+    with the exception that `link` is a valid keyword, and performs a 
+    `Highlight link groupName`
+ 5. Python interpolation is defined by using backticks; this means content
+    detected (where interpolation is supported; that means variable content and
+    group content) is thrown at the |:py3| command. This is ignored if you don't
+    `has("python3")`. Python 2 is not supported (and you shouldn't be using it
+    anyway; it has been unsupported for over a year already).
+
+There's no way to define new syntax groups; these go in `syntax/`, and follows
+an entirely different convention. If you absolutely want to add highlight group
+definitions, consider making a plugin and using Amber when the groups are in
+place.
+
+Also, note that because vim doesn't give two fucks about whether a group exists
+or not, Amber does no validation on your groups. As a side-effect, this means
+you can design for groups you don't have, but you can for obvious reasons not
+render it.
 
 vim:ft=help:tw=80
