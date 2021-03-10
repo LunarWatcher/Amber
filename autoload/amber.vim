@@ -32,7 +32,11 @@ def amber#Initialize()
 
     augroup AmberListener
         au!
-        autocmd CursorMovedI <buffer> call amber#Parse()
+        # We use CursorHoldI instead of CursorMovedI to prevent constant updates.
+        # Potentially slightly slower updates, but still does the trick.
+        # As long as it doesn't require a refresh, it's still about as close as it
+        # gets to real-time.
+        autocmd CursorHoldI <buffer> call amber#Parse()
     augroup END
 enddef
 
