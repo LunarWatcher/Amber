@@ -20,3 +20,10 @@ And the obligatory disadvantages:
 
 ... [and Python (and other interfaces) are still safe](https://groups.google.com/g/vim_use/c/K_U3ndDXOGA/m/sj5cndNaAgAJ). Probably. We'll cross that bridge when we get there.
 
+## TODO:
+
+* [ ] Preview
+* [ ] Save (need to do hybrid; .vim and a normal file containing the raw data, largely to facilitate theme updating)
+* [ ] Load (we load the second file mentioned in the save point)
+* [ ] Support for things like airline, where highlight groups aren't directly used.
+

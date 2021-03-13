@@ -12,6 +12,7 @@ enddef
 
 s:define("g:AmberShowContrast", 1)
 s:define("g:AmberOutputDirectory", "~/.amber-vim/")
+s:define("g:AmberClearHighlights", 1)
 
 def amber#Compile(statement: string)
     if statement == ""
@@ -22,17 +23,15 @@ def amber#Compile(statement: string)
     var tryStatement = matchlist(statement, '\v^\s*(.{-})\s*\{(.*)\}\s*$')
     if len(tryStatement) != 0
         # We have a statement
-        echom "Statement: " .. statement
     else
         # We check if we have a varible
         var tryVariable = matchlist(statement, '\v^\s*(var\s+[a-zA-Z0-9]+)\s*\V=\v\s*"(.{-})"\s*$')
         if len(tryVariable) != 0
-            echom "Variable: " .. statement
         endif
     endif
     # And we ignore everything invalid, because it might be an incomplete statement.
     # Incremental parsing means we can't complain too much
-    # Might be worth adding custom highlight groups? 
+    # Might be worth adding custom highlight groups?
 
 enddef
 
@@ -77,7 +76,7 @@ def amber#Initialize()
         endif
         return
     endif
-    split 
+    split
     noswapfile hide enew
     setlocal buftype=nofile
     setlocal bufhidden=hide
@@ -95,4 +94,27 @@ def amber#Initialize()
         # This is largely to check for normal mode shit.
         autocmd CursorHold  <buffer> call amber#Parse()
     augroup END
+
+    # Let's add a few highlights:
+    syn match AmberHighlightDefinition '\v(^.{-}(\s*|$)(\{.*\})?$)' contains=AmberHighlightFeature
+    # i.e. guifg=...
+    syn match AmberHighlightFeature '\v[a-zA-Z]+\=([`"'].{-}[`"']|.{-}\s)' contained contains=AmberHighlightFeaturePlainText,AmberHighlightFeaturePythonInterpolation
+    syn match AmberHighlightFeaturePlainText '\v\=\zs['"]?.{-}(['"]|\s)' contained
+    # Embedding python highlighting is not something I can be arsed to do atm.
+    # Partially because I have no idea how.
+    syn match AmberHighlightFeaturePythonInterpolation '\v\=\zs`.{-}`' contained
+
+    syn match AmberVariable '\v^\s*var.*' contains=AmberVariableName,AmberVariableContent
+    syn match AmberVariableName '\v\zs[a-zA-Z0-9]+\ze *\=' contained
+    syn match AmberVariableContent '\v\=\zs.*' contained
+
+    silent! hi link AmberHighlightDefinition Statement
+    silent! hi link AmberVariable Statement
+    silent! hi link AmberVariableName Constant
+    silent! hi link AmberVariableContent String
+    silent! hi link AmberHighlightFeature Identifier 
+    silent! hi link AmberHighlightFeaturePlainText String
+    silent! hi link AmberHighlightFeaturePythonInterpolation pythonImport
+
+
 enddef
