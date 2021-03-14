@@ -48,9 +48,25 @@ cursor is held rather than when it's been moved.
 This is largely a performance decision - we want real-time updates, but not so
 real-time it affects performance.
 
+Also, note that due to how syntax highlights are cleared, custom groups will be
+undefined. Their matches aren't removed, however, so while they aren't rendered,
+they still exist. 
 
 ================================================================================
 2. Usage                                                             *amber-usage*
+
+Usage is fairly straight-forward: you run |:AmberInit|, and start writing your
+theme. Syngroups are kept up to date with your theme definition.
+
+--------------------------------------------------------------------------------
+2.1. Commands                                                     *amber-commands*
+
+*:AmberInit*              Initializes Amber's buffer. Also clears syntax
+                        highlighting.
+*:AmberSynstack*          Lists all syntax highlighting groups under the cursor
+*:AmberInsertGroups*      Inserts groups under the cursor into Amber's buffer.
+                        Prevents duplicates
+
 
 ================================================================================
 3. Syntax                                                           *amber-syntax*
