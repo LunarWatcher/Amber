@@ -14,6 +14,11 @@ s:define("g:AmberShowContrast", 1)
 s:define("g:AmberOutputDirectory", "~/.amber-vim/")
 s:define("g:AmberClearHighlights", 1)
 
+# These keep track of highlights and variables.
+# Purely for generating the resulting files.
+g:AmberHighlights = {}
+g:AmberVariables = {}
+
 def amber#Compile(statement: string)
     if statement == ""
         # Ignore empty lines
@@ -23,10 +28,23 @@ def amber#Compile(statement: string)
     var tryStatement = matchlist(statement, '\v^\s*(.{-})\s*\{(.*)\}\s*$')
     if len(tryStatement) != 0
         # We have a statement
+        var name = tryStatement[1]
+        var groupContent = tryStatement[2]
+        g:AmberHighlights{name} = groupContent
+       
+        for [variable, value] in items(g:AmberVariables)
+            # Substitute in the variable
+            var groupContent = substitute(groupContent, '%' . variable, value, 'g')
+        endfor
+        
+
     else
         # We check if we have a varible
-        var tryVariable = matchlist(statement, '\v^\s*(var\s+[a-zA-Z0-9]+)\s*\V=\v\s*"(.{-})"\s*$')
+        var tryVariable = matchlist(statement, '\v^\s*var\s+([a-zA-Z0-9]+)\s*\V=\v\s*"(.{-})"\s*$')
         if len(tryVariable) != 0
+            var variableName = tryVariable[1]
+            var variableContent = tryVariable[2]
+            g:AmberVariables[variableName] = variableContent
         endif
     endif
     # And we ignore everything invalid, because it might be an incomplete statement.
@@ -41,28 +59,18 @@ def amber#Parse()
         echom "Bad parse"
         return
     endif
-    if !exists('b:AmberCache')
-        echom "init"
-        b:AmberCache = []
-    endif
-    echom "in function"
+    g:AmberVariables = {}
+    g:AmberHighlights = {}
 
     # We could of course use '.' instead, but this could potentially exclude
     # line changes triggered by things like multiple cursors (in one of many forms),
     # various visual multi-replace stuff (i.e. visual -> c triggers change across
     # several lines), and substitutions.
     var idx: number = 0
+    g:AccountedFor = []
     for line in getline(0, '$')
-        if idx >= len(b:AmberCache)
-            b:AmberCache->add(line)
-            amber#Compile(line)
-        else
-            # Potentially a weak cache. We'll see.
-            if line != b:AmberCache[idx]
-                b:AmberCache[idx] = line
-                amber#Compile(line)
-            endif
-        endif
+        # Caching might be reasonable here, but fuck that.
+        amber#Compile(line)
         idx += 1
     endfor
 
@@ -98,11 +106,8 @@ def amber#Initialize()
     # Let's add a few highlights:
     syn match AmberHighlightDefinition '\v(^.{-}(\s*|$)(\{.*\})?$)' contains=AmberHighlightFeature
     # i.e. guifg=...
-    syn match AmberHighlightFeature '\v[a-zA-Z]+\=([`"'].{-}[`"']|.{-}\s)' contained contains=AmberHighlightFeaturePlainText,AmberHighlightFeaturePythonInterpolation
+    syn match AmberHighlightFeature '\v[a-zA-Z]+\=(["'].{-}["']|.{-}\s)' contained contains=AmberHighlightFeaturePlainText,AmberHighlightFeaturePythonInterpolation
     syn match AmberHighlightFeaturePlainText '\v\=\zs['"]?.{-}(['"]|\s)' contained
-    # Embedding python highlighting is not something I can be arsed to do atm.
-    # Partially because I have no idea how.
-    syn match AmberHighlightFeaturePythonInterpolation '\v\=\zs`.{-}`' contained
 
     syn match AmberVariable '\v^\s*var.*' contains=AmberVariableName,AmberVariableContent
     syn match AmberVariableName '\v\zs[a-zA-Z0-9]+\ze *\=' contained
@@ -112,9 +117,6 @@ def amber#Initialize()
     silent! hi link AmberVariable Statement
     silent! hi link AmberVariableName Constant
     silent! hi link AmberVariableContent String
-    silent! hi link AmberHighlightFeature Identifier 
+    silent! hi link AmberHighlightFeature Identifier
     silent! hi link AmberHighlightFeaturePlainText String
-    silent! hi link AmberHighlightFeaturePythonInterpolation pythonImport
-
-
 enddef

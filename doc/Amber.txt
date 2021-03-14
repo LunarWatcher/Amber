@@ -25,9 +25,6 @@ values, and see what it looks like. As a side-effect, Amber also generates a
 .vim file that you can use and distribute as a colorscheme - even if you decide
 to uninstall Amber later.
 
-Amber also lets you work in Lua. This is largely because Lua is faster than
-Python, and both of which are faster
-
 Caveats~
 
 * There's currently no way to "undo" what Amber has done. Restart Vim to restore
@@ -80,11 +77,6 @@ syntax is meant to be simple.
     These are mostly compatible with the highlight command,
     with the exception that `link` is a valid keyword, and performs a
     `Highlight link groupName`
- 5. Python interpolation is defined by using backticks; this means content
-    detected (where interpolation is supported; that means variable content and
-    group content) is thrown at the |:py3| command. This is ignored if you don't
-    `has("python3")`. Python 2 is not supported (and you shouldn't be using it
-    anyway; it has been unsupported for over a year already).
 
 There's no way to define new syntax groups; these go in `syntax/`, and follows
 an entirely different convention. If you absolutely want to add highlight group
