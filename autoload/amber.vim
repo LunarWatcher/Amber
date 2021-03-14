@@ -136,6 +136,7 @@ def amber#Initialize()
     syn match AmberVariable '\v^\s*var.*' contains=AmberVariableName,AmberVariableContent
     syn match AmberVariableName '\v\zs[a-zA-Z0-9]+\ze *\=' contained
     syn match AmberVariableContent '\v\=\zs.*' contained
+    amber#ResetHighlights()
 
 enddef
 
@@ -198,4 +199,5 @@ def amber#Save(fn: string = "")
 
     var content = getline(0, '$')
     writefile(content, g:AmberOutputDirectory .. "/" .. fileName .. ".amber")
+    amber#VimscriptGenerator#generateVimscript(fileName)
 enddef
