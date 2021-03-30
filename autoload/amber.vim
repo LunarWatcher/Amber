@@ -12,20 +12,51 @@ enddef
 
 s:define("g:AmberShowContrast", 1)
 s:define("g:AmberOutputDirectory", $HOME .. "/.amber-vim/")
-if !isdirectory(g:AmberOutputDirectory)
-    mkdir(g:AmberOutputDirectory, 'p')
-endif
 s:define("g:AmberClearHighlights", 1)
+
+s:define("g:AmberCurrentTheme", 0)
+if !exists("g:AmberMeta")
+    g:AmberMeta = {
+        "Author": "<Your name here>",
+        "License": "<Your license here>",
+        "Source": "<Your repo link here>"
+    }
+endif
+
 g:AmberDirty = 0
 
 # These keep track of highlights and variables.
 # Purely for generating the resulting files.
 g:AmberHighlights = {}
 g:AmberVariables = {}
+g:AmberRawCode = []
 
-def amber#Compile(statement: string)
+var s:StatementCache = []
+var s:ParsingRawBlock = 0
+
+var s:VimscriptCache = tempname()
+g:AmberCodeCache = []
+
+def amber#Compile(statement: string, exportMode: number = 0)
     if statement == ""
         # Ignore empty lines
+        return
+    endif
+    
+    if (statement =~? "^begin vim$")
+        s:StatementCache = []
+        s:ParsingRawBlock = 1
+        return
+    elseif statement =~? "^end vim$"
+        
+        if (len(s:StatementCache) > 0)
+            add(g:AmberRawCode, s:StatementCache)
+        endif
+        s:ParsingRawBlock = 0
+        return
+    endif
+    if s:ParsingRawBlock
+        add(s:StatementCache, statement)
         return
     endif
     # Start parsing. Well, parsing largely being use regex to get shit
@@ -33,27 +64,46 @@ def amber#Compile(statement: string)
     if len(tryStatement) != 0
         # We have a statement
         var name: string = tryStatement[1]
-        var groupContent: string = tryStatement[2]
-        g:AmberHighlights[name] = groupContent
-       
-        for [variable, value] in items(g:AmberVariables)
-            # Substitute in the variable
-            groupContent = substitute(groupContent, '%' .. variable, value, 'g')
-        endfor
-        # Replace double quotes with single quotes
-        groupContent = substitute(groupContent, '"', "'", '') 
+        var groupContent: string = trim(tryStatement[2])
+
         if groupContent =~ "\s\*link="
+            g:AmberHighlights[name] = groupContent
             exec 'silent! hi ' .. substitute(groupContent, '=', ' ', '')
         else
-            exec "silent! hi " .. name .. " " .. groupContent
+            # We need to do some splitting
+            var groups = split(groupContent, " ")
+            var splitGrouping = []
+
+            for group in groups
+                if matchstr(group, '\v\(.{-}\)') != "" || stridx(group, '=%') != -1
+                    var bits = split(group, '=')
+                    add(splitGrouping, bits[0] .. "=")
+                    add(splitGrouping, substitute(bits[1], '%', exportMode == 0 ? 'g:' : 's:', 'gi'))
+                else
+                    add(splitGrouping, group)
+                endif
+            endfor
+
+            # Replace double quotes with single quotes
+            g:AmberHighlights[name] = splitGrouping
+
+            var raw = amber#VimscriptGenerator#assembleGroup(splitGrouping, 1)
+            var construct = raw[1]
+            if exportMode == 0
+                silent! exec 'exec "hi ' .. name .. ' ' .. substitute(trim(construct), "'", "''", 'g') .. '"'
+            endif
         endif
     else
         # We check if we have a varible
         var tryVariable = matchlist(statement, '\v^\s*var\s+([a-zA-Z0-9]+)\s*\V=\v\s*"(.{-})"\s*$')
         if len(tryVariable) != 0
             var variableName = tryVariable[1]
-            var variableContent = tryVariable[2]
+            var variableContent = trim(tryVariable[2])
             g:AmberVariables[variableName] = variableContent
+            
+            if exportMode == 0
+                silent! exec "g:" .. variableName .. "= '" .. variableContent .. "'"
+            endif
         endif
     endif
     # And we ignore everything invalid, because it might be an incomplete statement.
@@ -75,15 +125,38 @@ def amber#Parse()
     amber#ResetHighlights()
     g:AmberVariables = {}
     g:AmberHighlights = {}
+    s:StatementCache = []
+    s:ParsingRawBlock = 0
+    g:AmberRawCode = []
 
     # We could of course use '.' instead, but this could potentially exclude
     # line changes triggered by things like multiple cursors (in one of many forms),
     # various visual multi-replace stuff (i.e. visual -> c triggers change across
     # several lines), and substitutions.
     for line in getline(0, '$')
+        if line =~ "^#"
+            # Ignore comments for now.
+            continue
+        endif
         # Caching might be reasonable here, but fuck that.
         amber#Compile(line)
     endfor
+
+    if g:AmberCodeCache == g:AmberRawCode
+        return
+    endif
+    g:AmberCodeCache = g:AmberRawCode
+    
+    var str = []
+    for statement in g:AmberRawCode
+        extend(str, statement)
+    endfor
+
+    writefile(str, s:VimscriptCache)
+    exec "silent! source " .. s:VimscriptCache
+    g:AmberDirty = 1
+    # Reparse to update any function output
+    amber#Parse()
 
 enddef
 
@@ -97,6 +170,7 @@ def amber#ResetHighlights()
     silent! hi link AmberVariableContent String
     silent! hi link AmberHighlightFeature Identifier
     silent! hi link AmberHighlightFeaturePlainText String
+    silent! hi link Ambercomment Comment
 enddef
 
 def amber#Initialize()
@@ -112,6 +186,7 @@ def amber#Initialize()
     setlocal buftype=nofile
     setlocal bufhidden=hide
     file Amber code
+    setlocal ft=amber
 
     g:AmberBufferInit = bufnr('%')
 
@@ -136,6 +211,8 @@ def amber#Initialize()
     syn match AmberVariable '\v^\s*var.*' contains=AmberVariableName,AmberVariableContent
     syn match AmberVariableName '\v\zs[a-zA-Z0-9]+\ze *\=' contained
     syn match AmberVariableContent '\v\=\zs.*' contained
+
+    syn match AmberComment '\v^#.*$'
     amber#ResetHighlights()
 
 enddef
@@ -163,7 +240,12 @@ def amber#InsertGroups()
     var ids: list<number> = synstack(line('.'), col('.'))
     var mapped: list<string> = []
     for id in ids
-        add(mapped, synIDattr(id, 'name'))
+        var name = synIDattr(id, 'name')
+        if (!has_key(g:AmberHighlights, name))
+            add(mapped, synIDattr(id, 'name'))
+        else
+            echom "Skipped " .. name .. " -- already present."
+        endif
     endfor
     
     win_gotoid(get(win_findbuf(g:AmberBufferInit), 0))
@@ -177,12 +259,17 @@ def amber#Load(fn: string = "")
         call amber#Initialize()
     endif
     win_gotoid(get(win_findbuf(g:AmberBufferInit), 0))
-    var fileName = fn == "" ? input("Filename (note: has to be relative to g:AmberOutputDirectory; load the .amber file): ") : fn
-    if fileName !~? '\v\.amber$'
-        echom "Can only load .amber files; not " .. fileName
+    var fileName = fn == "" ? input("Filename (note: has to be relative to g:AmberOutputDirectory): ") : fn
+    if fileName =~? '\v\.(amber|vim)$'
+        echom "Don't load with any extensions"
+        return
+    elseif fileName == ""
+        echom "Can't load nothing"
         return
     endif
-    var content = readfile(g:AmberOutputDirectory .. "/" .. fileName)
+    g:AmberCurrentTheme = fileName
+
+    var content = readfile(g:AmberOutputDirectory .. "/" .. fileName .. ".amber")
     
     setline(1, content)
     g:AmberDirty = 1
@@ -195,9 +282,21 @@ def amber#Save(fn: string = "")
         return
     endif
     win_gotoid(get(win_findbuf(g:AmberBufferInit), 0))
-    var fileName = fn == "" ? input("Theme name: ") : fn
+    var fileName = fn == "" ? (type(g:AmberCurrentTheme) == v:t_number ? input("Theme name: ") : g:AmberCurrentTheme) : fn
 
     var content = getline(0, '$')
     writefile(content, g:AmberOutputDirectory .. "/" .. fileName .. ".amber")
     amber#VimscriptGenerator#generateVimscript(fileName)
+enddef
+
+
+def amber#SetOutput(fn: string = "")
+    if (fn == "")
+        g:AmberOutputDirectory = getcwd() .. "/colors"
+    else
+        g:AmberOutputDirectory = fn
+    endif
+    if !isdirectory(g:AmberOutputDirectory)
+        mkdir(g:AmberOutputDirectory, 'p')
+    endif
 enddef

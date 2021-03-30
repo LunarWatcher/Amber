@@ -61,12 +61,19 @@ theme. Syngroups are kept up to date with your theme definition.
 --------------------------------------------------------------------------------
 2.1. Commands                                                     *amber-commands*
 
-*:AmberInit*              Initializes Amber's buffer. Also clears syntax
-                        highlighting.
-*:AmberSynstack*          Lists all syntax highlighting groups under the cursor
-*:AmberInsertGroups*      Inserts groups under the cursor into Amber's buffer.
-                        Prevents duplicates
-
+*:AmberInit*               Initializes Amber's buffer. Also clears syntax
+                         highlighting.
+*:AmberSynstack*           Lists all syntax highlighting groups under the cursor
+*:AmberInsertGroups*       Inserts groups under the cursor into Amber's buffer.
+                         Prevents duplicates
+*:AmberSave* [theme name]  Where to save the theme. If the theme name is 0, the
+                         name is attempted sourced from |g:AmberCurrentTheme|.
+                         If |g:AmberCurrentTheme| is 0, you'll be prompted for a
+                         theme name.
+*:AmberLoad* [theme name]  Load a theme. If no theme name is supplied, the
+                         command prompts you for a name.
+*:AmberOutputHere*         Sets |g:AmberOutputDirectory| to getcwd() .. "/colors"
+*:AmberOutput* [output path]  Command wrapper around |g:AmberOutputDirectory|
 
 ================================================================================
 3. Syntax                                                           *amber-syntax*
@@ -93,6 +100,11 @@ syntax is meant to be simple.
     These are mostly compatible with the highlight command,
     with the exception that `link` is a valid keyword, and performs a
     `Highlight link groupName`
+ 5. Vimscript blocks:
+    Starts with a line just being `begin vim`, and ends with `end vim` -- note
+    that it's not compatible with vim9script because `source` doesn't expose
+    functions. Will revisit this in the future. ANYTHING between these lines
+    will be interpreted as Vimscript and sourced in.
 
 There's no way to define new syntax groups; these go in `syntax/`, and follows
 an entirely different convention. If you absolutely want to add highlight group
@@ -123,10 +135,13 @@ reset when the bar is updated. This isn't something Amber can help - if you have
 a regenerative thing hooked up, Amber won't be able to clear highlights
 properly.
 
+However, Amber does clear the highlights every time something has changed, which
+does have a certain effect on Airline.
+
 --------------------------------------------------------------------------------
                                                           *g:AmberOutputDirectory*
 
-Default: ~/.amber-vim
+Default: $HOME . '/.amber-vim'
 
 Defines where to output theme files. Note that these aren't output in a place
 where you can use it directly. You'll need to put it in the appropriate
@@ -138,6 +153,23 @@ it makes sense.
 As a suggestion, you can create a colorscheme plugin, and set the output to the
 `colors` folder in said plugin.
 
+--------------------------------------------------------------------------------
+                                                             *g:AmberCurrentTheme*
+
+Type: String or the integer 0
+
+This variable contains the current theme if |:AmberSave| or |:AmberLoad| has
+been called in the current session. This is primarily intended as a cache
+variable so you don't have to retype the name if you save several times in a
+single editing session.
+
+
+--------------------------------------------------------------------------------
+
+
+
+*amber-end-of-options* (this is a utility tag for document editing and doesn't
+                        represent anything of importance)
 ================================================================================
 5. License                                                         *amber-license*
 
