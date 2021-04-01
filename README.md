@@ -18,10 +18,10 @@ And the obligatory disadvantages:
 
 ## TODO:
 
-* [ ] Preview
-* [ ] Save (need to do hybrid; .vim and a normal file containing the raw data, largely to facilitate theme updating)
-* [ ] Load (we load the second file mentioned in the save point)
-* [ ] Support for things like airline, where highlight groups aren't directly used.
+* [x] Preview
+* [x] Save (need to do hybrid; .vim and a normal file containing the raw data, largely to facilitate theme updating)
+* [x] Load (we load the second file mentioned in the save point)
+* [x] Support for things like airline, where highlight groups aren't directly used. (update: ish; there's support for raw Vimscript, but airline specifically might have to be designed completely separately)
 
 ## Stuff for the future:
 * [ ] Sensible caching
