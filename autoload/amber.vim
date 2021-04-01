@@ -68,7 +68,8 @@ def amber#Compile(statement: string, exportMode: number = 0)
 
         if groupContent =~ "\s\*link="
             g:AmberHighlights[name] = groupContent
-            exec 'silent! hi ' .. substitute(groupContent, '=', ' ', '')
+            # Force a link even if the group exists
+            exec 'silent! hi! link ' .. name .. " " .. split(groupContent, '=')[1]
         else
             # We need to do some splitting
             var groups = split(groupContent, " ")
@@ -153,7 +154,7 @@ def amber#Parse()
     endfor
 
     writefile(str, s:VimscriptCache)
-    exec "silent! source " .. s:VimscriptCache
+    exec "source " .. s:VimscriptCache
     g:AmberDirty = 1
     # Reparse to update any function output
     amber#Parse()
