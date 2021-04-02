@@ -58,7 +58,12 @@ def amber#VimscriptGenerator#generateVimscript(filename: string)
 
         for [groupName, groupContent] in items(g:AmberHighlights)
             if type(groupContent) == v:t_string
-                add(lines, 'hi ' .. groupName .. ' ' .. groupContent)
+                if (stridx(groupContent, "link=") >= 0)
+                    # Link is a special case because of the different syntax
+                    add(lines, 'hi! link ' .. groupName .. ' ' .. split(groupContent, '=')[1])
+                else
+                    add(lines, 'hi ' .. groupName .. ' ' .. groupContent)
+                endif
             else
                 var raw = amber#VimscriptGenerator#assembleGroup(groupContent)
                 var needsExec = raw[0]
