@@ -3,7 +3,6 @@ vim9script
 # License: MIT
 # Author: https://github.com/LunarWatcher
 
-
 def s:define(name: string, default: any)
     if !exists(name)
         execute "" .. name .. " = " .. (type(default) == v:t_string ? '"' .. default .. '"' :  default)
@@ -34,7 +33,7 @@ g:AmberRawCode = []
 var s:StatementCache = []
 var s:ParsingRawBlock = 0
 
-var s:VimscriptCache = tempname()
+g:AmberVimscriptCache = tempname()
 g:AmberCodeCache = []
 
 def amber#Compile(statement: string, exportMode: number = 0)
@@ -43,7 +42,8 @@ def amber#Compile(statement: string, exportMode: number = 0)
         return
     endif
     
-    if (statement =~? "^begin vim$")
+    if statement =~? "^begin vim$"
+        echom "Started vim block"
         s:StatementCache = []
         s:ParsingRawBlock = 1
         return
@@ -153,8 +153,8 @@ def amber#Parse()
         extend(str, statement)
     endfor
 
-    writefile(str, s:VimscriptCache)
-    exec "source " .. s:VimscriptCache
+    writefile(str, g:AmberVimscriptCache)
+    exec "source " .. g:AmberVimscriptCache
     g:AmberDirty = 1
     # Reparse to update any function output
     amber#Parse()
