@@ -43,7 +43,6 @@ def amber#Compile(statement: string, exportMode: number = 0)
     endif
     
     if statement =~? "^begin vim$"
-        echom "Started vim block"
         s:StatementCache = []
         s:ParsingRawBlock = 1
         return
