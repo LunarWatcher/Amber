@@ -153,7 +153,7 @@ def amber#Parse()
     endfor
 
     writefile(str, g:AmberVimscriptCache)
-    exec "source " .. g:AmberVimscriptCache
+    silent! exec "source " .. g:AmberVimscriptCache
     g:AmberDirty = 1
     # Reparse to update any function output
     amber#Parse()
