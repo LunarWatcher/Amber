@@ -203,7 +203,7 @@ def amber#Initialize()
     augroup END
 
     # Let's add a few highlights:
-    syn match AmberHighlightDefinition '\v(^.{-}(\s*|$)(\{.*\})?$)' contains=AmberHighlightFeature
+    syn match AmberHighlightDefinition '\v(.{-}(\s*|$)(\{.*\})?$)' contains=AmberHighlightFeature
     # i.e. guifg=...
     syn match AmberHighlightFeature '\v[a-zA-Z]+\=(["'].{-}["']|.{-}\s)' contained contains=AmberHighlightFeaturePlainText,AmberHighlightFeaturePythonInterpolation
     syn match AmberHighlightFeaturePlainText '\v\=\zs['"]?.{-}(['"]|\s)' contained
