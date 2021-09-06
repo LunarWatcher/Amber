@@ -58,6 +58,129 @@ they still exist.
 Usage is fairly straight-forward: you run |:AmberInit|, and start writing your
 theme. Syngroups are kept up to date with your theme definition.
 
+See |amber-commands| for a list of commands, and |amber-syntax| for extended
+syntax information.
+
+--------------------------------------------------------------------------------
+2.0. Getting started                                            |amber-quickstart|
+
+As already mentioned, run |:AmberInit|. This works best on a "clean" session.
+Before continuing, I recommend using one of |:AmberOutput| or |:AmberOutputHere|
+to correctly set the output folder. If your current working directory is your
+theme repo, using |:AmberOutputHere| is recommended. This is necessary to get
+|:AmberSave| to output into the right directory. If you're loading a theme,
+running one of these commands prior to running |:AmberLoad| is required. Also
+note that you don't need to init before loading.
+
+Writing themes~
+
+When you've run |:AmberInit|, you're ready to write your theme. Amber
+automatically clears any existing colors, and updates Vim automatically with
+changes you make so Vim reflects the current state of your colorscheme.
+
+Note that due to how some plugins work, airline and other plugins don't get
+cleared in the same way. This is unfixable.
+
+Each line in the Amber buffer is either a highlight, a comment, or a variable.
+Vimscript blocks have some limited support, but these won't be covered.
+
+It's typical to start with a background color: >
+    Normal { guifg=#000 guibg=#fff }
+<
+
+This is also the general syntax for a highlight definition. There's the name of
+a highlight group (|:hi-normal|), some brackets that're purely for parsing, and
+the content of said brackets is identical to what's passed to a regular `hi`
+command. Remember, a Vim theme is just a series of |:highlight|s with color
+information. What goes in the group depends on what you're trying to do. The
+line above works if you have a truecolor terminal, or you're using a GUI version
+of Vim. See: |'termguicolors'|
+
+If you're making a theme for both GUI and 8 bit colors, you can of course use
+both: >
+    Normal { guifg=#000000 guibg=#ffffff ctermbg=white ctermfg=black }
+<
+
+The values can be whatever is supported by the parameter. For a complete list of
+features supported by vim, see |highlight-cterm|, |highlight-term|, and
+|highlight-gui|
+
+From here, it's a matter of finding the appropriate highlight groups.
+
+Going deeper: coloring the right things~
+
+Unless you have a reference theme, or you're really experienced with Vim themes,
+there's a good chance you have no clue which highlight groups you're looking
+for. 
+
+Aside a search engine being your best friend, you can use |:AmberSynstack| to
+get highlight groups under the cursor. To see more information about a group,
+run `:hi GroupNameHere`. For groups that just show "links to someOtherGroup",
+you can run `:hi someOtherGroup`, effectively manually following the link. This
+is particularly useful for finding base highlights.
+
+For an instance, some languages may have a highlight group called
+someLanguageComment, which is just a link to Comment. A command to automatically
+display links is planned for later.
+
+Using variables~
+
+Variables were added fairly early on, and they're primarily useful when you
+repeat colors. Syntactically, they're defined like this: >
+    var SomeVariable = "variable content"
+<
+
+For an instance: >
+    var PrimaryPink = "#F24AB2"
+<
+
+The type is irrelevant, so every variable looks like a string. If you're passing
+a raw number, you still surround it with quotes. It's all concatenated without
+the quotes to the resulting highlight instruction
+
+Dereferencing variables is done with `%`: >
+    iCursor { guibg=%PrimaryPink }
+<
+
+When the Vimscript file is generated, the variables are preserved.
+
+Using links~
+
+Linking in Vim themes is pretty straight-forward as a concept: it means that a
+given syntax group "inherits" another.
+
+These are used with a special link flag in the highlight definition: >
+    WintabsInactiveSepEmptyNC { link=WintabsActiveSepEmpty }
+<
+
+The part after the `=` is which group to link to. See: |:hi-link| for more info
+on linking in general
+
+Saving and exporting~
+
+When you save, a Vimscript file is generated with the theme definition. A
+`.amber` file is also saved, so you can continue editing later. |:AmberSave|
+writes the .amber and .vim files to |g:AmberOutputDirectory|, which you again
+can set with one of |:AmberOutput| or |:AmberOutputHere|. Setting it before
+saving is necessary if you want it to output to somewhere that isn't
+`~/.amber-vim/`.
+
+Two different files are saved because raw Vimscript is a pain to execute
+repeatedly, without spewing out a errors. This is also why Amber
+(unfortunately) had to use different syntax. (read: I don't want to parse
+vimscript in vim).
+
+When you've saved, you'll have a usable and sharable `.vim`-file. If you add the
+output folder as a Vim plugin, you can even test it out as a proper colorscheme.
+
+---
+
+In theory, Amber could be extended with additional generators for completely
+different editors by transforming the highlight group names and other commands
+into something usable by some other editor.
+That said, I won't be implementing this because I don't use any other editors
+where the colorscheme is a topic. 
+
 --------------------------------------------------------------------------------
 2.1. Commands                                                     *amber-commands*
 
@@ -72,6 +195,8 @@ theme. Syngroups are kept up to date with your theme definition.
                          theme name.
 *:AmberLoad* [theme name]  Load a theme. If no theme name is supplied, the
                          command prompts you for a name.
+                         Running |:AmberInit| before using |:AmberLoad| is not
+                         required.
 *:AmberOutputHere*         Sets |g:AmberOutputDirectory| to getcwd() .. "/colors"
 *:AmberOutput* [output path]  Command wrapper around |g:AmberOutputDirectory|
 
