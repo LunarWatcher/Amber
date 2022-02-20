@@ -1,19 +1,22 @@
 vim9script
+
+import autoload "amber/VimscriptGenerator.vim"
+
 # Amber.vim
 # License: MIT
 # Author: https://github.com/LunarWatcher
 
-def s:define(name: string, default: any)
+def Define(name: string, default: any)
     if !exists(name)
         execute "" .. name .. " = " .. (type(default) == v:t_string ? '"' .. default .. '"' :  default)
     endif
 enddef
 
-s:define("g:AmberShowContrast", 1)
-s:define("g:AmberOutputDirectory", $HOME .. "/.amber-vim/")
-s:define("g:AmberClearHighlights", 1)
+Define("g:AmberShowContrast", 1)
+Define("g:AmberOutputDirectory", $HOME .. "/.amber-vim/")
+Define("g:AmberClearHighlights", 1)
 
-s:define("g:AmberCurrentTheme", 0)
+Define("g:AmberCurrentTheme", 0)
 if !exists("g:AmberMeta")
     g:AmberMeta = {
         "Author": "<Your name here>",
@@ -30,32 +33,32 @@ g:AmberHighlights = {}
 g:AmberVariables = {}
 g:AmberRawCode = []
 
-var s:StatementCache = []
-var s:ParsingRawBlock = 0
+var StatementCache = []
+var ParsingRawBlock = 0
 
 g:AmberVimscriptCache = tempname()
 g:AmberCodeCache = []
 
-def amber#Compile(statement: string, exportMode: number = 0)
+def Compile(statement: string, exportMode: number = 0)
     if statement == ""
         # Ignore empty lines
         return
     endif
     
     if statement =~? "^begin vim$"
-        s:StatementCache = []
-        s:ParsingRawBlock = 1
+        StatementCache = []
+        ParsingRawBlock = 1
         return
     elseif statement =~? "^end vim$"
         
-        if (len(s:StatementCache) > 0)
-            add(g:AmberRawCode, s:StatementCache)
+        if (len(StatementCache) > 0)
+            add(g:AmberRawCode, StatementCache)
         endif
-        s:ParsingRawBlock = 0
+        ParsingRawBlock = 0
         return
     endif
-    if s:ParsingRawBlock
-        add(s:StatementCache, statement)
+    if ParsingRawBlock
+        add(StatementCache, statement)
         return
     endif
     # Start parsing. Well, parsing largely being use regex to get shit
@@ -78,7 +81,7 @@ def amber#Compile(statement: string, exportMode: number = 0)
                 if matchstr(group, '\v\(.{-}\)') != "" || stridx(group, '=%') != -1
                     var bits = split(group, '=')
                     add(splitGrouping, bits[0] .. "=")
-                    add(splitGrouping, substitute(bits[1], '%', exportMode == 0 ? 'g:' : 's:', 'gi'))
+                    add(splitGrouping, substitute(bits[1], '%', exportMode == 0 ? 'g:' : '', 'gi'))
                 else
                     add(splitGrouping, group)
                 endif
@@ -87,7 +90,7 @@ def amber#Compile(statement: string, exportMode: number = 0)
             # Replace double quotes with single quotes
             g:AmberHighlights[name] = splitGrouping
 
-            var raw = amber#VimscriptGenerator#assembleGroup(splitGrouping, 1)
+            var raw = VimscriptGenerator#assembleGroup(splitGrouping, 1)
             var construct = raw[1]
             if exportMode == 0
                 silent! exec 'exec "hi ' .. name .. ' ' .. substitute(trim(construct), "'", "''", 'g') .. '"'
@@ -112,7 +115,7 @@ def amber#Compile(statement: string, exportMode: number = 0)
 
 enddef
 
-def amber#Parse()
+def Parse()
     if !g:AmberDirty
         return
     endif
@@ -122,11 +125,11 @@ def amber#Parse()
         echom "Bad call to parse"
         return
     endif
-    amber#ResetHighlights()
+    ResetHighlights()
     g:AmberVariables = {}
     g:AmberHighlights = {}
-    s:StatementCache = []
-    s:ParsingRawBlock = 0
+    StatementCache = []
+    ParsingRawBlock = 0
     g:AmberRawCode = []
 
     # We could of course use '.' instead, but this could potentially exclude
@@ -139,7 +142,7 @@ def amber#Parse()
             continue
         endif
         # Caching might be reasonable here, but fuck that.
-        amber#Compile(line)
+        Compile(line)
     endfor
 
     if g:AmberCodeCache == g:AmberRawCode
@@ -156,11 +159,11 @@ def amber#Parse()
     silent! exec "source " .. g:AmberVimscriptCache
     g:AmberDirty = 1
     # Reparse to update any function output
-    amber#Parse()
+    Parse()
 
 enddef
 
-def amber#ResetHighlights()
+def ResetHighlights()
     # We clear highlights here
     hi clear
 
@@ -173,7 +176,7 @@ def amber#ResetHighlights()
     silent! hi link Ambercomment Comment
 enddef
 
-def amber#Initialize()
+export def Initialize()
     # We don't wanna initialize several times
     if exists("g:AmberBufferInit")
         if g:AmberBufferInit >= 0
@@ -196,9 +199,9 @@ def amber#Initialize()
         # Potentially slightly slower updates, but still does the trick.
         # As long as it doesn't require a refresh, it's still about as close as it
         # gets to real-time.
-        autocmd CursorHoldI <buffer> call amber#Parse()
+        autocmd CursorHoldI <buffer> call Parse()
         # This is largely to check for normal mode shit.
-        autocmd CursorHold  <buffer> call amber#Parse()
+        autocmd CursorHold  <buffer> call Parse()
         autocmd TextChanged,TextChangedI <buffer> g:AmberDirty = 1
     augroup END
 
@@ -213,13 +216,13 @@ def amber#Initialize()
     syn match AmberVariableContent '\v\=\zs.*' contained
 
     syn match AmberComment '\v^#.*$'
-    amber#ResetHighlights()
+    ResetHighlights()
 
 enddef
 
 # Utilities
 
-def amber#AmberSynstack()
+export def AmberSynstack()
     # These don't work. Possibly a vim9 bug
     #echo synstack(line('.'), col('.'))
     #echo map(synstack(line('.'), col('.')), 'synIDattr(v:val, ''name'')')
@@ -232,7 +235,7 @@ def amber#AmberSynstack()
     echom 'The highlight groups under the cursor are: ' .. join(mapped, ', ')
 enddef
 
-def amber#InsertGroups()
+export def InsertGroups()
     if !exists("g:AmberBufferInit") || g:AmberBufferInit == 0
         echom "That's only useful if you :AmberInit first :)"
         return
@@ -254,9 +257,9 @@ def amber#InsertGroups()
 enddef
 
 
-def amber#Load(fn: string = "")
+def Load(fn: string = "")
     if !exists("g:AmberBufferInit") || g:AmberBufferInit == 0
-        call amber#Initialize()
+        call Initialize()
     endif
     win_gotoid(get(win_findbuf(g:AmberBufferInit), 0))
     var fileName = fn == "" ? input("Filename (note: has to be relative to g:AmberOutputDirectory): ") : fn
@@ -273,10 +276,10 @@ def amber#Load(fn: string = "")
     
     setline(1, content)
     g:AmberDirty = 1
-    amber#Parse()
+    Parse()
 enddef
 
-def amber#Save(fn: string = "")
+export def Save(fn: string = "")
     if !exists("g:AmberBufferInit") || g:AmberBufferInit == 0
         echom "That's only useful if you :AmberInit first :)"
         return
@@ -286,11 +289,11 @@ def amber#Save(fn: string = "")
 
     var content = getline(0, '$')
     writefile(content, g:AmberOutputDirectory .. "/" .. fileName .. ".amber")
-    amber#VimscriptGenerator#generateVimscript(fileName)
+    VimscriptGenerator#generateVimscript(fileName)
 enddef
 
 
-def amber#SetOutput(fn: string = "")
+export def SetOutput(fn: string = "")
     if (fn == "")
         g:AmberOutputDirectory = getcwd() .. "/colors"
     else

@@ -2,15 +2,17 @@
 " License: MIT
 " Author: https://github.com/LunarWatcher
 
-command! AmberInit call amber#Initialize()
-command! AmberSynstack call amber#AmberSynstack()
-command! AmberInsertGroups call amber#InsertGroups()
+import autoload "amber.vim"
 
-command! -nargs=? AmberSave call amber#Save(<f-args>)
-command! -nargs=? AmberLoad call amber#Load(<f-args>)
+command! AmberInit call amber.Initialize()
+command! AmberSynstack call amber.AmberSynstack()
+command! AmberInsertGroups call amber.InsertGroups()
 
-command! -nargs=0 AmberOutputHere call amber#SetOutput("")
-command! -nargs=1 AmberOutput call amber#SetOutput(<f-args>)
+command! -nargs=? AmberSave call amber.Save(<f-args>)
+command! -nargs=? AmberLoad call amber.Load(<f-args>)
+
+command! -nargs=0 AmberOutputHere call amber.SetOutput("")
+command! -nargs=1 AmberOutput call amber.SetOutput(<f-args>)
 
 " Output <M-a>h ere
 nnoremap <M-a>h :AmberOutputHere<cr>

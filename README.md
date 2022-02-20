@@ -2,7 +2,7 @@
 
 Theme previewer for Vim.
 
-Note: due to use of Vim 9, at the time of writing, this plugin is incompatible with neovim. A relatively new version of Vim (I have no idea what patch is at least required, but I'm using 8.2.2465) is also required. <sub>Note: Patches adding neovim support by removing Vim 9 will be declined, but patches adding neovim support by tweaking code if Neovim adds support for Vim 9 will be approved.</sub>
+Note: due to use of Vim 9, at the time of writing, this plugin is incompatible with neovim. A relatively new version of Vim (I have no idea what patch is at least required, but I'm using 8.2.4424) is also required. <sub>Note: Patches adding neovim support by removing Vim 9 will be declined, but patches adding neovim support by tweaking code if Neovim adds support for Vim 9 will be approved.</sub>
 
 
 Neovim users can use [lush.nvim](https://github.com/rktjmp/lush.nvim) instead.
